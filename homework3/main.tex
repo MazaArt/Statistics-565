@@ -1,0 +1,292 @@
+\documentclass{article}
+\usepackage{graphicx, indentfirst, amssymb, amsmath, placeins} 
+
+\title{Stat 565, HW 3}
+\author{Artem Ivaniuk}
+\date{February 2026}
+
+\begin{document}
+
+\maketitle
+\section*{Problem 1}
+\subsection*{Description}
+Rewrite the following models in the original form without using the back-shift operator $B$.
+
+\begin{enumerate}
+\item[(a)] $(1 - .3B)(1 - .5B)(1 - .6B + .4B^2)(r_t - .5) = a_t$
+
+\item[(b)] 
+$(1 - .3B)(1 - .5B)(1 - .6B + .4B^2)(r_t - .5) = (1 - .3B)(1 + .8B)a_t$
+\end{enumerate}
+\subsection*{Solution}
+\begin{enumerate}
+\item[(a)]
+
+Expanding,
+
+$(1-.3B)(1-.5B)(1-.6B+.4B^2)=1-1.4B+1.03B^2-.41B^3+.06B^4$
+
+So $(1-1.4B+1.03B^2-.41B^3+.06B^4)(r_t-.5)=a_t$
+
+By definition of $B^k r_t=r_{t-k}$,
+\[
+(r_t-.5)
+-1.4(r_{t-1}-.5)
++1.03(r_{t-2}-.5)
+-.41(r_{t-3}-.5)
++.06(r_{t-4}-.5)
+=a_t
+\]
+
+Expanding,
+$r_t
+-1.4r_{t-1}
++1.03r_{t-2}
+-.41r_{t-3}
++.06r_{t-4}
+-0.14
+=a_t$
+
+Hence,
+$r_t
+=1.4r_{t-1}
+-1.03r_{t-2}
++.41r_{t-3}
+-.06r_{t-4}
++0.14
++a_t$
+
+\item[(b)]
+
+Expanding the right side,
+$(1-.3B)(1+.8B)=1+.5B-.24B^2$
+
+So
+$(1-1.4B+1.03B^2-.41B^3+.06B^4)(r_t-.5)
+=(1+.5B-.24B^2)a_t$
+
+Applying $B^k$,
+\[
+(r_t-.5)
+-1.4(r_{t-1}-.5)
++1.03(r_{t-2}-.5)
+-.41(r_{t-3}-.5)
++.06(r_{t-4}-.5)
+=a_t+.5a_{t-1}-.24a_{t-2}
+\]
+
+Expanding,
+\[
+r_t
+-1.4r_{t-1}
++1.03r_{t-2}
+-.41r_{t-3}
++.06r_{t-4}
+-0.14
+=a_t+.5a_{t-1}-.24a_{t-2}
+\]
+
+Hence,
+\[
+r_t
+=1.4r_{t-1}
+-1.03r_{t-2}
++.41r_{t-3}
+-.06r_{t-4}
++0.14
++a_t+.5a_{t-1}-.24a_{t-2}
+\]
+
+\end{enumerate}
+
+
+\section*{Problem 2}
+\subsection*{Description}
+Suppose that the daily log return of a security follows the model
+\[
+r_t = 0.01 + 0.2r_{t-2} + a_t,
+\]
+where $\{a_t\}$ is a Gaussian white noise series with mean zero and variance $0.02$. What are the mean and variance of the return series $r_t$? Calculate all the autocorrelations of $r_t$.
+\subsection*{Solution}
+Let $\mu = E[r_t] = 0.01 + 0.2E[r_{t-2}] = 0.01 + 0.2\mu$
+
+So $0.8\mu = 0.01 \Rightarrow  \mu = 0.0125$
+
+Since shifting the series up or down by a constant does not affect its autovariance and autocorrelations, let $x_t = r_t - \mu$. Then
+$x_t = 0.2x_{t-2} + a_t$
+
+For the variance, $\gamma_k = \operatorname{Cov}(x_t,x_{t-k})$. Then
+\[
+\gamma_0 = \operatorname{Var}(x_t)
+= \operatorname{Var}(0.2x_{t-2} + a_t)
+= 0.2^2 \gamma_0 + 0.02
+\]
+
+So
+$\gamma_0(1 - 0.04) = 0.02
+\Rightarrow
+\gamma_0 = \frac{0.02}{0.96} = \frac{1}{48}
+\Rightarrow
+\operatorname{Var}(r_t) = \frac{1}{48}$
+
+For $k \ge 1$,
+$\gamma_k
+= \operatorname{Cov}(x_t,x_{t-k})
+= \operatorname{Cov}(0.2x_{t-2} + a_t,\; x_{t-k})
+= 0.2\,\gamma_{k-2}$
+
+For $k=1$,
+$\gamma_1 = 0.2\gamma_{-1} = 0.2\gamma_1
+\Rightarrow
+\gamma_1 = 0$
+
+Recursively,
+$\begin{cases}
+    \gamma_{2m} = (0.2)^m \gamma_0, & m \ge 1 \\
+    \gamma_{2m+1} = 0, & m \ge 0
+\end{cases}$
+
+
+Therefore the autocorrelations $\rho_k = \gamma_k/\gamma_0$ are
+$\begin{cases}
+    \rho_0 = 1 \\
+    \rho_{2m} = (0.2)^m, & m \ge 1 \\
+    \rho_{2m+1} = 0, & m \ge 0 \\
+\end{cases}$
+
+\section*{Problem 3}
+\subsection*{Description}
+Suppose that the daily log return of a security follows the model
+\[
+r_t = 0.01 + 0.6r_{t-1} - 0.4r_{t-2} + a_t,
+\]
+where $\{a_t\}$ is a white noise series with mean zero and variance $0.02$.
+
+\begin{enumerate}
+\item[(a)] What is the mean of the return series $r_t$?
+\item[(b)] Calculate the lag-1, lag-2 and lag-3 autocorrelations of $r_t$.
+\item[(c)] Calculate the variance, lag-1 and lag-2 autocovariances of $r_t$. (Do not use the computer for this problem, unless you need to use it to solve the linear system of equations. Please show details of your solutions.)
+\item[(d)] Use what you found in part (c) to calculate the autocovariances of lags 3, 4, 5, 6, 7. Plot the autocovariances of lags 0 to 7 in the same graph.
+\item[(e)] Simulate a time series of length $T = 2000$ from this model. Create a time series plot, and a sample autocorrelation plot. Compute the lag-1, lag-2 and lag-3 sample autocorrelations, and sample autocovariances.
+\end{enumerate}
+\subsection*{Solution}
+\begin{enumerate}
+\item
+
+Taking expectations,
+$\mu = E[r_t] = 0.01 + 0.6\mu - 0.4\mu$
+
+Then $\mu = 0.01 + 0.2\mu$, so $0.8\mu = 0.01$, and $\mu = 0.0125$
+
+\item
+Correlations are not affected by up/down shifts, so let $x_t = r_t - \mu$
+
+Then
+$x_t = 0.6x_{t-1} - 0.4x_{t-2} + a_t$
+
+Then
+$\gamma_1 = 0.6\gamma_0 - 0.4\gamma_1$,
+$\gamma_2 = 0.6\gamma_1 - 0.4\gamma_0$
+
+From the first,
+$1.4\gamma_1 = 0.6\gamma_0$,
+so $\gamma_1 = \frac{3}{7}\gamma_0$
+
+Then
+$\gamma_2 = 0.6\frac{3}{7}\gamma_0 - 0.4\gamma_0
+= \left(\frac{18}{70} - \frac{28}{70}\right)\gamma_0
+= -\frac{1}{7}\gamma_0$
+
+Hence
+$\rho_1 = \frac{\gamma_1}{\gamma_0} = \frac{3}{7}$,
+$\rho_2 = -\frac{1}{7}$
+
+Then, $\rho_3 = 0.6\rho_2 - 0.4\rho_1
+= 0.6\left(-\frac{1}{7}\right) - 0.4\left(\frac{3}{7}\right)
+= -\frac{9}{35}$
+
+\item
+$\gamma_0 = 0.6\gamma_1 - 0.4\gamma_2 + 0.02$
+
+Substituting $\gamma_1 = \frac{3}{7}\gamma_0$ and
+$\gamma_2 = -\frac{1}{7}\gamma_0$:
+
+$\gamma_0
+= 0.6\frac{3}{7}\gamma_0
+- 0.4\left(-\frac{1}{7}\gamma_0\right)
++ 0.02
+= \frac{22}{70}\gamma_0 + 0.02$
+
+Then $\frac{24}{35}\gamma_0 = 0.02$
+so $\gamma_0 = \frac{7}{240}$
+
+Thus
+$\gamma_1 = \frac{3}{7}\gamma_0 = \frac{1}{80}$,
+$\gamma_2 = -\frac{1}{7}\gamma_0 = -\frac{1}{240}$
+
+\item 
+Auto-covariances of Lags 3-7 (code attached at the end):
+\FloatBarrier
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\linewidth]{3.d.png}
+    \caption{Auto-covariances of Lags 3-7}
+\end{figure}
+\FloatBarrier
+
+\item 
+\FloatBarrier
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=.9\linewidth]{3.e.time_series.png}
+    \caption{Simulated time series}
+\end{figure}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=.9\linewidth]{3.e.covariance.png}
+    \caption{Sample autocorrelation plot}
+\end{figure}
+Based on Python's output:
+
+Sample autocorrelations: [0.4271, -0.1287, -0.2389]
+
+Sample autocovariances: [0.0120, -0.0036, -0.0067]
+\FloatBarrier
+
+\end{enumerate}
+
+\section*{Problem 4}
+\subsection*{Description}
+Consider the following models.
+
+\begin{enumerate}
+\item[(i)] AR(3): 
+$r_t = 0.3 + 0.8r_{t-1} - 0.5r_{t-2} - 0.2r_{t-3} + a_t$
+
+\item[(ii)] MA(3): 
+$r_t = 0.3 + a_t + 0.8a_{t-1} - 0.5a_{t-2} - 0.2a_{t-3}$
+
+\item[(iii)] ARMA(3,2): 
+$r_t = 0.3 + 0.8r_{t-1} - 0.5r_{t-2} - 0.2r_{t-3} + a_t + 0.5a_{t-1} + 0.3a_{t-2}$
+\end{enumerate}
+
+\noindent
+Assume all $a_t$ are i.i.d.\ $N(0, 4)$. For each of the three preceding models:
+
+\begin{enumerate}
+\item[(1)] Simulate a series of length $T = 600$, give the time series plot.
+\item[(2)] Use the function \texttt{memory()} to calculate the memory functions of lag 0 to lag 10, and plot them.
+\item[(3)] Use the function \texttt{auto.cov()} to calculate the autocorrelation functions of lag 0 to lag 10, and plot them.
+\item[(4)] Compare the true autocorrelations plot with the sample autocorrelations plot.
+\end{enumerate}
+\subsection*{Solution}
+
+Please see the attached Jupyter notebook with all of the plots for this question being on pages 7 to 13 of the Jupyter PDF (right under 'Question 4' markdown text and code block). 
+
+Due to using Python, I used 
+\texttt{ArmaProcess.impulse\_response(11)} in place of R's \texttt{memory()} function and \texttt{ArmaProcess.acf(11)} in place of R's \texttt{auto.cov()} function. They seem to do identical things as R's functions (although I initially hesitated on "impulse response"), but just wanted to provide clarification.
+
+In terms of comparing the true vs sample autocorrelation plots, it seemed that AR ACF seemed to overshoot in comparison to the true in terms of absolute scale but that could just be a simulation error/insignificance. For MA ACF, both ACF plots converged quickly to zero with some light cyclical behavior seen in the sample one, which shouldn't have been there overall. For ARMA, the comparison plot seemed to also have the feature of overshooting the absolute value of the ACF in the sample compared to the true one, roughly in the same magnitude as the AR one. 
+
+
+\end{document}
