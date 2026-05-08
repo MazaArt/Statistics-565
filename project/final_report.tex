@@ -1,137 +1,144 @@
 \documentclass{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{graphicx, indentfirst, amssymb, amsmath, amsthm, placeins, xurl, hyperref, multicol, algorithm, algorithmic, booktabs}
+\usepackage{graphicx, indentfirst, amssymb, amsmath, placeins, xurl, booktabs}
+\usepackage[hidelinks,hypertexnames=false]{hyperref}
 
-\title{Stat 565 Final Report}
+\title{Replication of ``TDA of Financial Time Series" Methodology \& Extension to Pre-COVID Setting.\\
+Statistics 565 Final Report}
 \author{Artem Ivaniuk}
-\date{May 2026}
+\date{\today}
 
 \begin{document}
 
 \maketitle
 
-\section*{Introduction}
-This report summarizes the completed replication and extension project for \textit{Topological Data Analysis of Financial Time Series: Landscapes of Crashes} by Marian Gidea and Yuri Katz (\url{https://arxiv.org/pdf/1703.04385}). Following my proposal and intermediate report, the main objective is to reproduce the empirical pipeline for topological indicators based on persistence landscapes and to assess whether induced time series behave in an informative way prior to major U.S.\ equity stress episodes, benchmarked against standard volatility measures. In complementary terms, the question is whether multivariate geometry of recent returns carries incremental information relative to dispersion and dependence summaries alone.
+\section*{Abstract}
+This project replicates the topological data analysis framework developed by Gidea and Katz in ``Topological Data Analysis of Financial Time Series:
+Landscapes of Crashes" (\url{https://arxiv.org/pdf/1703.04385}) for daily U.S. equity indices and extends the sample through 2020. For each trading date, I construct rolling windows of multivariate log-return vectors and analyze their geometric structure using persistence diagrams and persistence landscapes. I then track persistence landscape norms over time and compare them with VIX behavior during major periods of market stress.
 
-The work has two components. First, I replicate the paper's baseline U.S.\ implementation: Yahoo Finance inputs, rolling multivariate clouds, persistence landscapes (\(w\in\{50,100\}\)), and anchored diagnostics around the dot-com and Lehman dates. Second, I apply identical code to an extended horizon through 2020, including the COVID disruption, so that conclusions can be compared across an episode outside the authors' estimation window without changing the substantive procedure midway. Subsequent sections summarize the underlying construction, replication outputs, extension results, and limitations.
+The replication results show the clearest buildup patterns around the 2008 Lehman Brothers collapse, where persistence landscape norms and volatility measures increase together before the crisis. Results for the Dot-com period are less consistent across different statistical checks, suggesting that the relationship between topology-based indicators and financial stress may vary across events. Extending the analysis through the COVID-19 crash shows that the same framework does not generate a strong early-warning signal under the unchanged specification. Overall, the results suggest that persistence-based topological measures can provide useful information about market structure, but they are better interpreted as complementary indicators alongside traditional volatility measures rather than as stand-alone forecasting tools.
 
-\section*{Background and motivation}
-At each date \(t\), the construction fixes a backward-looking window of length \(w\) over \(d\) traded indices (here \(d=4\)). Daily log-returns yield vectors in \(\mathbb{R}^d\), so the trailing \(w\) observations form a point cloud \(X_t\subset\mathbb{R}^d\) describing simultaneous index behavior rather than unrelated univariate traces. Means, variances, and correlations characterize much of \(X_t\) through first- and second-order structure; the motivating claim in Gidea and Katz is that regimes prior to crises may reorganize geometric features visible only when the full cloud is summarized at multiple spatial scales---for example redistribution of density or stable loop-like structure across resolutions---prior to unmistakable shocks in volatility on every coordinate. Persistent homology operationalizes qualitative ``shape'' in a repeatable fashion.
+\section{Introduction}
+Financial markets are usually analyzed using familiar quantities such as returns, volatility, and correlations between assets. Gidea and Katz propose a different approach by studying the geometric structure of market returns using tools from topological data analysis (TDA). Instead of focusing only on averages or pairwise relationships, their framework examines how collections of returns are organized in higher-dimensional space over time. For this project, I replicate the empirical pipeline from Gidea and Katz using daily Yahoo Finance data for four major U.S.\ equity indices: the S\&P~500, DJIA, Nasdaq Composite, and Russell~2000. Second, I extend the sample through 2020 to test whether the same methodology captures behavior around the COVID-19 market crash without changing the original parameter choices or implementation.
 
-Roughly speaking, persistent homology analyzes connectivity of thickened neighborhoods (\(\epsilon\)-neighborhood complexes) built from \(X_t\) as \(\epsilon\) increases from zero. Focusing on homology in degree \(H_1\) tracks topological loops: each surviving loop admits a lifetime between birth \(b\) and death \(d\), yielding a persistence diagram \(D^{(1)}_t\) of \(\{(b,d)\}\)-pairs summarized by persistence landscapes \(\lambda(\cdot)\); landscape norms \(\|\lambda\|_1\) and \(\|\lambda\|_2\) reduce this information to integrable scalars that update as \(t\) advances. The replicated implementation follows the authors' \(H_1\) / Vietoris--Rips emphasis and produces norms aligned alongside VIX rather than interpreting coordinates margin by margin alone.
+The central idea behind the paper is that market stress may appear not only through rising volatility, but also through changes in the overall geometric structure of joint returns, which may be impossible to observe without utilizing topology-based time series analysis. Persistent homology provides a way to summarize these geometric changes across multiple scales. By tracking persistence landscape norms (defined in section \ref{sec:methods}) through time, the paper attempts to determine whether topological summaries contain useful information before major market disruptions.
 
-Within that framework their intent is statistical early warning: systematically trending topological mass before anchored crash dates would corroborate multivariate deformation that classical aggregates underweight. Economic intuition is suggestive rather than strict: systemic stories of tightened linkages coincide qualitatively with geometric shifts in \(X_t\). Because crisis mechanisms vary and histories are scarce, reproducibility exercises and disciplined out-of-sample extension remain necessary to separate robust behavior from illustrative windows; that is precisely what replication and COVID extrapolation furnish here.
+\newpage
+\section{Methodology}
+\label{sec:methods}
 
-\section*{Replication: Setup and Main Findings}
-\subsection*{Data and pipeline}
-The data source is Yahoo Finance (\texttt{yfinance}), corresponding to my replication notebook. Daily adjusted closes are retrieved for:
-\begin{multicols}{2}
-\begin{itemize}
-    \item S\&P 500 (\texttt{\^{}GSPC})
-    \item DJIA (\texttt{\^{}DJI})
-    \item NASDAQ Composite (\texttt{\^{}IXIC})
-    \item Russell 2000 (\texttt{\^{}RUT})
-\end{itemize}
-\end{multicols}
-VIX (\texttt{\^{}VIX}) enters as an external benchmark mirrored against landscape norms throughout, consistent with the paper's juxtaposition against implied volatility. Computational steps coincide with their published sequencing:
-\begin{enumerate}
-    \item Construct daily log-returns \(r_{i,j}=\log(P_{i,j}/P_{i-1,j})\).
-    \item Compile rolling \(w\)-day clouds \(X_t\subset\mathbb{R}^4\) for \(w\in\{50,100\}\).
-    \item Compute \(H_1\) persistent homology with a Vietoris--Rips filtration using \texttt{ripser}.
-    \item Estimate persistence landscapes and record \(L^1\), \(L^2\) norms at each trailing window end-date.
-    \item Execute pre-anchor diagnostics (variance spectra, rolling variance, Kendall-\(\tau\) trend tests aligned with interim course materials).
-\end{enumerate}
+For each trading date $t$, I construct a rolling window of the previous $w$ daily log-return vectors, where $w\in\{50,100\}$. Each day in the window corresponds to a point in $\mathbb{R}^4$, using returns from the S\&P~500, DJIA, Nasdaq Composite, and Russell~2000. The resulting collection of points forms a cloud $X_t$ that represents how the four markets moved together during that time period.
+
+To study the structure of these point clouds, I use persistent homology with a Vietoris--Rips filtration. Informally, the filtration starts by treating each point independently and then gradually connects nearby points as a scale parameter $\epsilon$ increases. When enough connections appear, loops and higher-dimensional structures can form. In this report, the main focus is on $H_1$, which tracks loop structures within the data.
+
+Each loop is associated with a birth scale $b$ and a death scale $d$, producing persistence pairs $(b,d)$. Features that persist for longer periods, measured by $d-b$, are interpreted as more stable geometric structures, while short-lived features are usually treated as noise. These persistence pairs are summarized using persistence landscapes, which convert the persistence diagram into a collection of functions $\lambda_k(x)$. This allows the data to be analyzed using standard function-space summaries such as $L^1$ and $L^2$ norms.
+
+Intuitively, the goal is to transform a complex four-dimensional return cloud into a simpler signal that measures whether market behavior is becoming more structured during periods of stress. If joint returns begin reorganizing before a crisis, this may appear through larger or more persistent geometric loops, leading to higher persistence landscape norms.
+
+Data are collected from Yahoo Finance using \texttt{yfinance}. Adjusted closing prices are downloaded for the four equity indices and for VIX, which serves as a benchmark volatility measure. Daily log-returns are computed as
+$r_{i,j}=\log(P_{i,j}/P_{i-1,j})$.
+Persistent homology calculations are performed using \texttt{ripser}, and persistence landscapes are computed for each rolling window. 
+
+Following the framework used in the paper and the course replication workflow, I compare persistence landscape norms with market events using rolling variance analysis, spectral analysis, and Kendall-$\tau$ trend tests over 250-trading-day windows before major crisis dates. Figure~\ref{fig:rep_data} in the appendix confirms that the aligned adjusted-close series and log-return calculations are consistent before applying the topological pipeline.
+
+\section{Replication results}
+\label{sec:results}
+
+Figure~\ref{fig:rep_norms} shows the trajectories of the $L^1$ and $L^2$ persistence landscape norms over time. Both measures tend to increase during periods associated with higher market stress, motivating a closer look at the major crisis periods studied in the original paper.
 
 \FloatBarrier
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{figures/figure_cell7_out0.png}
-    \caption{Replication data verification: adjusted close levels and aligned daily log-returns for the indices entering the topological pipeline.}
-    \label{fig:rep_data}
-\end{figure}
-\FloatBarrier
-
-\FloatBarrier
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.75\textwidth]{figures/figure_cell13_out0.png}
-    \caption{Persistence landscape norm trajectories (\(L^1\), \(L^2\)); elevated segments concentrate around stressed intervals.}
+    \includegraphics[width=0.7\textwidth]{figures/figure_cell13_out0.png}
+    \caption{Persistence landscape norm trajectories ($L^1$, $L^2$)}
     \label{fig:rep_norms}
 \end{figure}
 \FloatBarrier
 
-\subsection*{Event-focused replication findings}
-Figure~\ref{fig:rep_events} repeats anchored comparisons for dot-com (left) and Lehman (right). Lehman aligns most cleanly with the paper's emphasis on pre-event elevation: standardized \(L^1\) evolves together with rising VIX in the buildup interval. Dot-com retains visible structure but behaves less uniformly across diagnostics, discouraging extrapolation from a uniform directional cue for every crisis solely from topology.
+Figure~\ref{fig:rep_events} compares normalized aggregate equity levels, standardized $L^1$ norms for $w=50$, and normalized VIX around the Dot-com crash and the Lehman Brothers collapse. The Lehman period produces the clearest agreement between persistence landscape norms and volatility measures. Both $L^1$ and VIX rise noticeably before the main market disruption, which matches the primary conclusion reached by Gidea and Katz.
+
+The Dot-com period is less convincing. While the persistence norms still move during the event window, the behavior is less consistent and does not provide the same clear buildup pattern seen before Lehman. This weaker result appears both visually and in the statistical diagnostics, suggesting that the topological signal depends heavily on the specific market environment being studied.
 
 \FloatBarrier
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.48\textwidth]{figures/figure_cell15_out0.png}
+    \includegraphics[width=0.49\textwidth]{figures/figure_cell15_out0.png}
     \hfill
-    \includegraphics[width=0.48\textwidth]{figures/figure_cell15_out1.png}
-    \caption{Event-centric panels: normalized S\&P 500 trajectory, standardized \(L^1\) (\(w=50\)), and normalized VIX; dot-com versus Lehman anchors.}
+    \includegraphics[width=0.49\textwidth]{figures/figure_cell15_out1.png}
+    \caption{Normalized S\&P~500 trajectory, standardized $L^1$ ($w=50$), and normalized VIX centered on Dot-com (left) and Lehman (right).}
     \label{fig:rep_events}
 \end{figure}
-\FloatBarrier
 
-Table~\ref{tab:rep_trends} summarizes Kendall-\(\tau\) statistics (reported jointly with asymptotic \(p\)-values) applied to variance and low-frequency spectral components of landscape norms computed over \(250\) pre-anchor sessions. Lehman aligns directionally across both summaries with an escalating-risk portrayal; dot-com retains strong significance yet manifests opposing trend signs depending on spectral contrast, reaffirming event-specific heterogeneity emphasized graphically earlier.
-
-\FloatBarrier
-\begin{table}[h!]
+\begin{table}[htbp]
     \centering
     \begin{tabular}{lcc}
     \toprule
-    Event & Variance trend (\(\tau, p\)) & Low-frequency PSD trend (\(\tau, p\)) \\
+    Event & Variance trend ($\tau$, $p$) & Low-frequency PSD trend ($\tau$, $p$) \\
     \midrule
-    Dot-com & \(-0.223,\; 1.44\times10^{-7}\) & \(-0.602,\; 1.42\times10^{-45}\) \\
-    Lehman & \(0.888,\; 4.36\times10^{-97}\) & \(0.691,\; 1.40\times10^{-59}\) \\
+    Dot-com & $-0.223$, $1.44\times10^{-7}$ & $-0.602$, $1.42\times10^{-45}$ \\
+    Lehman & $0.888$, $4.36\times10^{-97}$ & $0.691$, $1.40\times10^{-59}$ \\
     \bottomrule
     \end{tabular}
-    \caption{Kendall-\(\tau\) trend tests on variance and low-frequency power of the landscape norm before each crash date.}
+    \caption{Kendall-$\tau$ trend tests on variance and low-frequency power of landscape norms over 250 pre-anchor sessions.}
     \label{tab:rep_trends}
 \end{table}
 \FloatBarrier
 
-\section*{Extension: Post-Paper Sample and COVID-Era Test}
-\subsection*{Extension design}
-The same codebase is rerun with only an extended Yahoo Finance pull through 2020 so that comparisons for the COVID episode do not hinge on discretionary changes to filtration or homology code introduced between samples.
+Table~\ref{tab:rep_trends} supports the graphical results. The Lehman period shows strong positive trends in both variance and low-frequency spectral power, consistent with increasing market stress before the crisis. The Dot-com results are statistically significant but much less consistent across diagnostics. 
 
-Exported outputs mirror the replication bundle:
-\begin{itemize}
-    \item persistence landscape norm series (\(w=50\), \(w=100\)),
-    \item aligned 4-index returns,
-    \item VIX benchmark.
-\end{itemize}
+Overall, the replication reaches a similar conclusion to the original paper. Persistence landscape $L^1$ norms appear capable of signaling some major market disruptions, especially the Lehman Brothers collapse, but the results are noticeably weaker for the Dot-com period. This suggests that the effectiveness of the topological signal is not uniform across crises and may depend on the structure of the specific event.
 
-\subsection*{Post-paper behavior (2017 onward)}
-Figure~\ref{fig:ext_postpaper} superimposes standardized landscape norms versus standardized VIX along the elongated sample path. Elevated turbulence intervals exhibit partial co-movement, yet divergence episodes remain visible, implying the topological signal conveys information beyond mechanical replication of implied volatility dynamics.
+\section{Extension: COVID-19 period}
+\label{sec:extension}
+
+To test whether the framework generalized beyond the original sample period, I extended the Yahoo Finance data through 2020 while keeping the same implementation, rolling windows, and parameter choices. This provides an out-of-sample test of whether persistence landscape norms behave similarly during (and most importantly, prior to) the COVID-19 market crash.
+
+Figure~\ref{fig:ext_postpaper} compares standardized $L^1$ and $L^2$ persistence landscape norms across the two rolling window sized after the original replication sample. Both exhibit a strong spike around after March of 2020, but not prior to it. Quite on the contrary, the elevated norms are prevalent for a strong time after the spike but do not exhibit a predictive behavior for the upcoming market behavior.
 
 \FloatBarrier
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=.75\textwidth]{figures/extension_cell13_out0.png}
-    \caption{Post-replication horizon: juxtaposed standardized \(L^1\) norms and standardized VIX benchmark.}
+    \includegraphics[width=\textwidth]{figures/extension_cell13_out0.png}
+    \caption{Standardized $L^1$ landscape norms versus standardized VIX after the replicated sample window.}
     \label{fig:ext_postpaper}
 \end{figure}
-\FloatBarrier
 
-\subsection*{COVID-era stress test}
-Because COVID lies outside Gidea and Katz's published horizon, Figure~\ref{fig:ext_covid} constitutes an out-of-sample check. Ahead of the February--March 2020 selloff, normalized \(L^1\) remains near the bottom of the plotted interval while VIX accelerates sharply, so this specification (\(w=50\); four-equity universe) affords limited justification for interpreting \(L^1\) as an early-warning screen for COVID-specific stress.
-
-Such a divergence is plausible when the shock transmits quickly through repricing tied to unfolding news rather than through the slower evolution of intra-window geometry summarized by homology on a fifty-day horizon. Robustness analyses (alternate window lengths, larger asset sets, diagnostics aimed at abrupt breaks) lie outside the present scope; nevertheless the pattern counsels restraint in generalizing unqualified early-warning claims beyond the historical episodes originally documented.
-
-\FloatBarrier
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=.75\textwidth]{figures/extension_cell15_out0.png}
-    \caption{Focused COVID window: normalized aggregate index level alongside persistence landscape \(L^1\) and VIX. Subdued \(L^1\) preceding the downturn weakens preemptive signalling under this parametrization.}
+    \includegraphics[width=\textwidth]{figures/extension_cell15_out0.png}
+    \caption{COVID-focused window with normalized aggregate S\$P 500, persistence landscape $L^1$, and VIX.}
     \label{fig:ext_covid}
 \end{figure}
 \FloatBarrier
 
-\section*{Conclusion}
-Replication demonstrates that persistence landscape norms can register familiar stress eras; congruence among figures and Kendall summaries is strongest for Lehman among the anchored cases reproduced here. Dot-com illustrates dispersion across diagnostics, implying that extrapolating one template to every episode would overstate uniformity.
+Figure~\ref{fig:ext_covid} focuses specifically on the COVID-19 crash. Unlike the Lehman event, the persistence landscape $L^1$ norms do not show a meaningful buildup before the market decline. In fact, the norms remain near historical lows leading into the February--March 2020 selloff, even as VIX rises sharply and equity markets collapse.
 
-Together with Figure~\ref{fig:ext_covid}, the extension indicates that analogous early-warning conclusions need not survive every newer shock absent retuning or complementary signals. Taken as a package, evidence supports interpreting topological trackers as exploratory complements to volatility benchmarks, calibrated case by case rather than asserted as universally leading predictors pending further empirical work.
+This result is important because it directly tests the robustness of the methodology outside the original sample. The COVID crash was one of the sharpest market disruptions in recent history, yet the persistence landscape norms provided little indication of the incoming stress. Under the unchanged setup, the topological signal was not only weak, but actually near all-time lows immediately before the crash.
+
+One possible explanation is that the COVID shock developed too rapidly for rolling-window geometric summaries to capture structural changes ahead of time. Another possibility is that the persistence landscape framework is sensitive to the specific type of market crisis being studied. In either case, the extension results suggest that the predictive usefulness of the $L^1$ norms may be less stable than originally hoped.
+
+\section{Conclusion and discussion}
+\label{sec:discussion}
+
+This project replicated the topological data analysis framework developed by Gidea and Katz and then extended the analysis through the COVID-19 market crash. The replication results broadly support the original paper's findings. Persistence landscape $L^1$ norms appear capable of identifying buildup patterns before some major financial crises, particularly the Lehman Brothers collapse. However, the results are much weaker for the Dot-com period, where the signals are less consistent across graphical and statistical measures.
+
+The extension through 2020 provides a more challenging test of the framework. During the COVID-19 crash, the persistence landscape norms failed to show a meaningful early-warning signal and were actually near historical lows before the market decline. This contrasts sharply with the behavior observed during Lehman and suggests that the methodology may not generalize well across all crisis environments.
+
+The main takeaway from this project is that studying the topology of financial markets is still an interesting and valuable research direction. Persistent homology provides a different way to analyze market structure by focusing on the geometry of joint returns instead of only volatility or correlations. The framework clearly captures meaningful structural changes during some periods of market stress.
+
+At the same time, the results suggest that persistence landscape norms are probably not as robust or universal an indicator as the original paper may have implied. Their effectiveness appears highly dependent on the type of crisis, the timing of the shock, and the parameter choices used in the rolling-window construction. As a result, these topological indicators are better interpreted as exploratory tools that complement traditional financial measures rather than reliable stand-alone forecasting signals.
+
+
+\newpage
+\section*{Appendix}
+
+Figure~\ref{fig:rep_data} confirms adjusted-close levels and daily log-return alignment among the replication inputs prior to applying persistent homology.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/figure_cell7_out0.png}
+    \caption{Adjusted-close levels and aligned daily log-returns for instruments entering the topological pipeline.}
+    \label{fig:rep_data}
+\end{figure}
 
 \end{document}
